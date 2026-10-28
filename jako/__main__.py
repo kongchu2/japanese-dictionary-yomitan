@@ -1,6 +1,6 @@
 import argparse
 
-from . import build, fetch, review, translate, validate
+from . import build, fetch, review, status, translate, validate
 
 
 def main():
@@ -24,6 +24,8 @@ def main():
     b.set_defaults(run=build.main)
 
     sub.add_parser("validate", help="validate dist/*.zip against Yomitan schemas").set_defaults(run=validate.main)
+
+    sub.add_parser("status", help="translation progress").set_defaults(run=status.main)
 
     r = sub.add_parser("review", help="write a translation sample for manual review")
     r.add_argument("-n", type=int, default=200)
