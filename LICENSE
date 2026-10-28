@@ -1,0 +1,11 @@
+Dictionary data
+===============
+
+The translations in `translations/` and the dictionaries built from them
+(jmdict-ko.zip, kanjidic-ko.zip) are derived from JMdict and KANJIDIC2 and are
+licensed under the Creative Commons Attribution-ShareAlike 4.0 International
+License (CC BY-SA 4.0): https://creativecommons.org/licenses/by-sa/4.0/
+
+JMdict and KANJIDIC2 are the property of the Electronic Dictionary Research and
+Development Group (EDRDG), and are used in conformance with the Group's licence:
+https://www.edrdg.org/edrdg/licence.html

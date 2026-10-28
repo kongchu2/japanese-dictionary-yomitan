@@ -1,0 +1,68 @@
+name: Build and release
+
+on:
+  schedule:
+    - cron: "0 3 * * *" # daily, after jmdict-simplified's release
+  push:
+    branches: [main]
+    paths: ["translations/**", "jako/**", ".github/workflows/**"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      - name: Fetch JMdict / KANJIDIC2
+        run: python -m jako fetch
+
+      - name: Build
+        run: python -m jako build
+
+      - name: Validate
+        run: python -m jako validate
+
+      - name: Skip if content is unchanged
+        id: changed
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release download --repo "$GITHUB_REPOSITORY" --pattern content.sha256 --output previous.sha256 2>/dev/null \
+             && cmp -s previous.sha256 dist/content.sha256; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "No content change since the latest release."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Release
+        if: steps.changed.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          rev=$(python -c "import json; print(json.load(open('dist/jmdict-ko-index.json'))['revision'])")
+          src=$(cat data/raw/VERSION)
+          translated=$(wc -l < translations/terms.jsonl)
+          gh release create "v$rev" dist/*.zip dist/*-index.json dist/content.sha256 \
+            --title "JMdict-ko $rev" \
+            --notes "JMdict-ko / KANJIDIC-ko 자동 빌드
+
+          - 원본: jmdict-simplified $src
+          - 번역된 엔트리: $translated
+
+          Yomitan → 설정 → 사전 → 가져오기에서 zip 파일을 불러오세요."
