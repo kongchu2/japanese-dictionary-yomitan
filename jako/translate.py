@@ -169,7 +169,7 @@ def translate_terms(args):
         out = llm.call(TERMS_SYSTEM, prompt, TERMS_SCHEMA)
         recs = []
         for item in out.get("entries", []):
-            e = by_id.pop(item.get("id"), None)
+            e = by_id.pop(str(item.get("id", "")).lstrip("#"), None)  # prompts show ids as "#123"
             if e is None:
                 continue
             senses = [[g.strip() for g in s if g.strip()] for s in item["senses"]]
