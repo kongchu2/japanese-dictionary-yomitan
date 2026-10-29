@@ -19,24 +19,27 @@ This builds a Japanese→Korean dictionary for Yomitan: the JMdict structure plu
 - `data/` (JMdict/KANJIDIC2 JSON, Yomitan schemas), `dist/` and `review/` are gitignored. Run `fetch` in a fresh checkout.
 - `.github/workflows/release.yml`: daily build, plus on push to `translations/**` or `jako/**`. It validates, then creates a GitHub release only when `dist/content.sha256` differs from the latest release. CI never translates.
 
-## Current task: finish step 3 (translate the top ~50k entries)
+## Status: step 3 is done (top ~50k entries translated)
 
-Check progress first: `python -m jako status`. On 2026-10-29: common words 69% (15,617 / 22,649), top-50k target 31%, kanji 100%.
+`python -m jako status` on 2026-10-29: common words 100% (22,649), top-50,049 target 100%, all JMdict 22.9%, kanji 100%, low confidence 1,538. Translations are on branch `claude/nice-babbage-ldd0ue`; CI releases only from `main`, so nothing is released until that branch is merged.
+
+Re-running a translation (after a JMdict update makes entries stale, or to extend coverage):
 
 ```sh
 python3 -m venv .venv && .venv/bin/pip install -r requirements.txt   # fresh checkout only
 .venv/bin/python -m jako fetch
 claude -p --model haiku "say ok"        # verify the CLI is logged in before anything long
 .venv/bin/python -m jako translate terms --common-only --model sonnet --workers 4
-.venv/bin/python -m jako translate terms --limit 27400 --model haiku --workers 4
+.venv/bin/python -m jako translate terms --limit N --model haiku --workers 4
 ```
 
-- **Order is decided.** Every JMdict "common" entry uses Sonnet. After that, the next 27,400 by frequency (wordfreq ranking in `jmdict.rank`) use Haiku.
-  - `--limit` counts only untranslated entries, in rank order. Once common words are done, `--limit 27400` takes the next 27,400.
+- **Order is decided.** Every JMdict "common" entry uses Sonnet. After that, entries by frequency (wordfreq ranking in `jmdict.rank`) use Haiku; the target is the top 50,049 (`TARGET` in `jako/status.py`).
+  - `--limit` counts only untranslated entries, in rank order (including common ones a Sonnet run failed on, which then go to Haiku). To stay inside the target, set N to the number of untranslated entries in the top 50,049, not a fixed 27,400.
 - **Runs are resumable and safe to interrupt.** Results are appended per batch.
 - **Usage limit:** when the CLI reports the 5-hour/usage limit, the run stops cleanly and **exits with code 75**. Chain the commands with `&&` so the Haiku run does not start after a limit stop.
   - The limit message is matched by `_LIMIT_MARKERS` in `jako/llm.py`. If a new wording leaks through as repeated "batch failed" lines, kill the run and add the marker.
 - Run long translations in the background. Don't poll; wait for the completion notification.
+- **Cloud sessions:** the agent proxy blocks the GitHub API, so `jako fetch` gets 403 on the jmdict-simplified `releases/latest` call. Direct release downloads work: take the newest tag from `git ls-remote --tags https://github.com/scriptin/jmdict-simplified` and download `https://github.com/scriptin/jmdict-simplified/releases/download/<tag>/{jmdict-examples-eng,kanjidic2-all}-<tag>.json.zip` into the paths `jako/fetch.py` uses (and write the tag to `SOURCE_VERSION`).
 
 **After each run** (whether it finished or hit the limit):
 
@@ -49,12 +52,17 @@ End commit messages with the attribution line from the current session's system 
 
 ## Known issues / open work
 
-- **~130 entries fail every time** (latest IDs are listed at the end of `review/common.log`; the file is gitignored, so re-run to see them). Cause not investigated.
-  - Likely suspects: `_valid_senses` in `jako/translate.py` rejects glosses that contain kana/kanji, or the sense count doesn't match.
-  - To debug: call `ClaudeCLI(...).call(TERMS_SYSTEM, jmdict.entry_prompt(e), TERMS_SCHEMA)` for one such entry and see which check fails.
+- **A few entries fail validation per run** (75 of 27,400 on the last Haiku run; all passed when re-run). Investigated 2026-10-29 by re-sending them one by one:
+  - Most are random: the same entry passes on the next try. Just re-run the failing IDs (`--limit` picks them up first).
+  - Persistent cause 1: the model adds hanja in parentheses (亡き → `고(故)`, 糸状 → `사상(絲狀)의`). `_valid_senses` rejects these, which is correct. The user decided **not** to strip the hanja automatically.
+  - Persistent cause 2: the model splits one JMdict sense into several (春期, 仙道), so the sense count doesn't match.
+  - Fixed: the model sometimes echoed ids as `"#123"` (how `entry_prompt` shows them), which failed a whole batch. `translate_terms` now strips the `#`.
   - Do not loosen the no-Japanese-script rule blindly. Glosses must be Hangul only.
 - 21 kokuji (込, 枠, …) have empty 훈음, which is expected. Some kokuji 훈음 are invented (畑 → 화전 전, 峠 → 고개 상) and need a human check.
-- About 2% of entries are `"c": "low"`. They render with a "신뢰도 낮음" note. `python -m jako review --low` dumps them for review.
+- About 3% of entries (1,538) are `"c": "low"`: 1,021 Haiku, 517 Sonnet, 518 of them common words. They render with a "신뢰도 낮음" note. `python -m jako review --low -n 2000` dumps them all to `review/low.md` (gitignored).
+  - Typical topics: kana-only words (`uk`), archaic senses, abbreviations, Buddhist/historical terms, mahjong and go terms, species names.
+  - A spot check found most of them acceptable. Real errors seen include fake Sino-Korean readings (一過 → 일과), wrong domain terms (下駄 in go → "덤 효과의 이득"), and loanword spelling (ドック → 독 rather than 도크).
+  - 49 entries put "(고어)" on senses JMdict doesn't tag `arch`/`obs`/`dated` (e.g. おっかない sense 2).
 - Not done yet: example sentences (Tatoeba) in the output; using krdict / kowiktionary as translation hints; Yomitan's in-app update check (works only once the repo is public).
 
 ## Translation prompt decisions (`TERMS_SYSTEM` in jako/translate.py)
