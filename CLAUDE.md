@@ -58,6 +58,7 @@ End commit messages with the attribution line from the current session's system 
   - Persistent cause 2: the model splits one JMdict sense into several (春期, 仙道), so the sense count doesn't match.
   - Fixed: the model sometimes echoed ids as `"#123"` (how `entry_prompt` shows them), which failed a whole batch. `translate_terms` now strips the `#`.
   - Do not loosen the no-Japanese-script rule blindly. Glosses must be Hangul only.
+  - Still untranslated after the ranks 50,050–80,049 run (2026-11-01), not investigated: 2851823 郡家, 1180200 押し詰まる, 1183430 温色, 1210910 勧化. All have one sense whose glosses pack several meanings together, so the sense-split cause is likely.
 - 21 kokuji (込, 枠, …) have empty 훈음, which is expected. Some kokuji 훈음 are invented (畑 → 화전 전, 峠 → 고개 상) and need a human check.
 - About 3% of entries (1,538) are `"c": "low"`: 1,021 Haiku, 517 Sonnet, 518 of them common words. They render with a "신뢰도 낮음" note. `python -m jako review --low -n 2000` dumps them all to `review/low.md` (gitignored).
   - Typical topics: kana-only words (`uk`), archaic senses, abbreviations, Buddhist/historical terms, mahjong and go terms, species names.
