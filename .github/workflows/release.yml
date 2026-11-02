@@ -57,12 +57,19 @@ jobs:
         run: |
           rev=$(python -c "import json; print(json.load(open('dist/jmdict-ko-index.json'))['revision'])")
           src=$(cat data/raw/VERSION)
-          translated=$(wc -l < translations/terms.jsonl)
+          read -r translated total pct low <<< "$(python - <<'EOF'
+          import json
+          recs = [json.loads(l) for l in open("translations/terms.jsonl", encoding="utf-8") if l.strip()]
+          total = len(json.load(open("data/raw/jmdict.json", encoding="utf-8"))["words"])
+          print(len(recs), total, f"{len(recs) / total:.1%}", sum(r["c"] == "low" for r in recs))
+          EOF
+          )"
           gh release create "v$rev" dist/*.zip dist/*-index.json dist/content.sha256 \
             --title "JMdict-ko $rev" \
             --notes "JMdict-ko / KANJIDIC-ko 자동 빌드
 
           - 원본: jmdict-simplified $src
-          - 번역된 엔트리: $translated
+          - 번역된 엔트리: $translated / $total ($pct)
+          - 신뢰도 낮음 표시: $low
 
           Yomitan → 설정 → 사전 → 가져오기에서 zip 파일을 불러오세요."
