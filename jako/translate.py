@@ -14,6 +14,10 @@ from .paths import KANJI_STORE, KANJIDIC, TAGS_FILE, TERMS_STORE
 from .store import Store
 
 JAPANESE_SCRIPT = re.compile(r"[぀-ヿ㐀-䶿一-鿿]")
+# Lowercase Latin words (machine gun, 시트belt). Acronyms (NHK가), units (180ml), single letters (y좌표),
+# binomial names (Sasakia charonda) and quoted text are allowed.
+ENGLISH_WORD = re.compile(r"(?<![A-Za-zÀ-ÿ0-9])[a-zß-ÿ]{3,}(?![A-Za-zÀ-ÿ])|[가-힣][a-zß-ÿ]{3,}|[a-zß-ÿ]{3,}[가-힣]")
+ENGLISH_EXEMPT = re.compile(r"\b[A-Z][a-z]+ [a-z]+\b|'[^']*'|\"[^\"]*\"|\b(?:sin|cos|tan|log)\b")
 HUNUM = re.compile(r"^[가-힣](?:[가-힣 ,·()]*[가-힣)])? [가-힣]$")  # "날 생", "배울 학"
 
 TERMS_SYSTEM = """You are a professional Japanese–Korean lexicographer writing the Korean side of a Japanese→Korean learner's dictionary built on JMdict.
@@ -143,10 +147,14 @@ def _run(batches, worker, workers):
     return ok, failed, stop.is_set()
 
 
+def _has_english(gloss):
+    return bool(ENGLISH_WORD.search(ENGLISH_EXEMPT.sub("", gloss)))
+
+
 def _valid_senses(senses, expected):
     return (
         len(senses) == expected
-        and all(s and all(g.strip() and not JAPANESE_SCRIPT.search(g) for g in s) for s in senses)
+        and all(s and all(g.strip() and not JAPANESE_SCRIPT.search(g) and not _has_english(g) for g in s) for s in senses)
     )
 
 
