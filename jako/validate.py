@@ -1,9 +1,11 @@
 """Validate built dictionaries against Yomitan's JSON schemas, plus a few lookup smoke checks."""
+import functools
 import json
 import re
 import sys
 import zipfile
 
+import fastjsonschema
 from jsonschema.validators import validator_for
 
 from .paths import DIST, SCHEMAS
@@ -17,9 +19,19 @@ BANK_SCHEMAS = {
 SMOKE_RULES = {"食べる": "v1", "行く": "v5", "勉強": "vs", "高い": "adj-i", "来る": "vk"}
 
 
+def _schema(name):
+    return json.loads((SCHEMAS / name).read_text())
+
+
 def _validator(name):
-    schema = json.loads((SCHEMAS / name).read_text())
+    schema = _schema(name)
     return validator_for(schema)(schema)
+
+
+@functools.lru_cache(maxsize=None)
+def _fast_validator(name):
+    # Compiled to Python code: ~20x faster than jsonschema on the term banks, but stops at the first error.
+    return fastjsonschema.compile(_schema(name))
 
 
 def validate_zip(path):
@@ -27,12 +39,19 @@ def validate_zip(path):
     with zipfile.ZipFile(path) as z:
         for name in sorted(z.namelist()):
             if name == "index.json":
-                v = _validator("dictionary-index-schema.json")
+                schema = "dictionary-index-schema.json"
             elif m := re.match(r"(\w+_bank)_\d+\.json$", name):
-                v = _validator(BANK_SCHEMAS[m.group(1)])
+                schema = BANK_SCHEMAS[m.group(1)]
             else:
                 continue
-            for err in v.iter_errors(json.loads(z.read(name))):
+            data = json.loads(z.read(name))
+            try:
+                _fast_validator(schema)(data)
+                continue
+            except fastjsonschema.JsonSchemaException:
+                pass
+            # Re-check the failing file with jsonschema to list every error with its path.
+            for err in _validator(schema).iter_errors(data):
                 errors += 1
                 if errors <= 20:
                     print(f"  {name}: {'/'.join(map(str, err.absolute_path))}: {err.message[:200]}")
