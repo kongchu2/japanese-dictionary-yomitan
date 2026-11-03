@@ -58,10 +58,13 @@ jobs:
           rev=$(python -c "import json; print(json.load(open('dist/jmdict-ko-index.json'))['revision'])")
           src=$(cat data/raw/VERSION)
           read -r translated total pct low <<< "$(python - <<'EOF'
-          import json
-          recs = [json.loads(l) for l in open("translations/terms.jsonl", encoding="utf-8") if l.strip()]
-          total = len(json.load(open("data/raw/jmdict.json", encoding="utf-8"))["words"])
-          print(len(recs), total, f"{len(recs) / total:.1%}", sum(r["c"] == "low" for r in recs))
+          from jako import jmdict
+          from jako.paths import TERMS_STORE
+          from jako.store import Store
+          # Count only translations that match the current JMdict (stale ones are left out of the build).
+          words, store = jmdict.load()["words"], Store(TERMS_STORE)
+          fresh = [store.get(e["id"]) for e in words if (store.get(e["id"]) or {}).get("h") == jmdict.source_hash(e)]
+          print(len(fresh), len(words), f"{len(fresh) / len(words):.2%}", sum(r["c"] == "low" for r in fresh))
           EOF
           )"
           gh release create "v$rev" dist/*.zip dist/*-index.json dist/content.sha256 \
