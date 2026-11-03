@@ -469,7 +469,7 @@
 {"c": "嘲", "hunum": ["비웃을 조"], "m": "sonnet"}
 {"c": "噂", "hunum": ["모일 준"], "m": "sonnet"}
 {"c": "噌", "hunum": ["떠들썩할 쟁"], "m": "sonnet"}
-{"c": "噛", "hunum": [], "m": "sonnet"}
+{"c": "噛", "hunum": ["깨물 교"], "m": "manual"}
 {"c": "器", "hunum": ["그릇 기"], "m": "sonnet"}
 {"c": "噴", "hunum": ["뿜을 분"], "m": "sonnet"}
 {"c": "噺", "hunum": [], "m": "sonnet"}
@@ -759,7 +759,7 @@
 {"c": "崎", "hunum": ["험할 기"], "m": "sonnet"}
 {"c": "崔", "hunum": ["높을 최"], "m": "sonnet"}
 {"c": "崖", "hunum": ["언덕 애"], "m": "sonnet"}
-{"c": "崚", "hunum": [], "m": "sonnet"}
+{"c": "崚", "hunum": ["험준할 릉"], "m": "manual"}
 {"c": "崩", "hunum": ["무너질 붕"], "m": "sonnet"}
 {"c": "嵐", "hunum": ["남기 람"], "m": "sonnet"}
 {"c": "嵩", "hunum": ["높을 숭"], "m": "sonnet"}
