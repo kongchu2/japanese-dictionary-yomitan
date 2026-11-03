@@ -1254,7 +1254,7 @@
 {"c": "更", "hunum": ["고칠 경", "다시 갱"], "m": "sonnet"}
 {"c": "書", "hunum": ["글 서"], "m": "sonnet"}
 {"c": "曹", "hunum": ["마을 조"], "m": "sonnet"}
-{"c": "曼", "hunum": [], "m": "sonnet"}
+{"c": "曼", "hunum": ["끌 만"], "m": "manual"}
 {"c": "曽", "hunum": ["일찍 증"], "m": "sonnet"}
 {"c": "曾", "hunum": ["일찍 증"], "m": "sonnet"}
 {"c": "替", "hunum": ["바꿀 체"], "m": "sonnet"}
@@ -1588,7 +1588,7 @@
 {"c": "湖", "hunum": ["호수 호"], "m": "sonnet"}
 {"c": "湘", "hunum": ["물이름 상"], "m": "sonnet"}
 {"c": "湛", "hunum": ["즐길 담", "잠길 침"], "m": "sonnet"}
-{"c": "湧", "hunum": [], "m": "sonnet"}
+{"c": "湧", "hunum": ["물 솟을 용"], "m": "manual"}
 {"c": "湯", "hunum": ["끓일 탕", "물 힘차게 흐를 상"], "m": "sonnet"}
 {"c": "湾", "hunum": ["물굽이 만"], "m": "sonnet"}
 {"c": "湿", "hunum": ["젖을 습"], "m": "sonnet"}
